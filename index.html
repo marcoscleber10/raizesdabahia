@@ -1,0 +1,2464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raízes da Bahia - Árvore Genealógica dos Municípios</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #3d3d3d 100%);
+            padding: 20px;
+            border-bottom: 3px solid #d4af37;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #d4af37;
+        }
+
+        .logo span {
+            color: #f5f5f5;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box input {
+            padding: 10px 15px;
+            border: 1px solid #d4af37;
+            background: #2d2d2d;
+            color: #f5f5f5;
+            border-radius: 5px;
+            width: 300px;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 100px 20px;
+            background: radial-gradient(circle at center, #2d2d2d 0%, #1a1a1a 100%);
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #d4af37;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .hero p {
+            font-size: 18px;
+            max-width: 800px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            margin: 60px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 48px;
+            font-weight: bold;
+            color: #d4af37;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Navigation Buttons */
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 40px 0;
+        }
+
+        .nav-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%);
+            border: 2px solid #d4af37;
+            color: #f5f5f5;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn:hover {
+            background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+            color: #1a1a1a;
+            transform: translateY(-2px);
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 36px;
+            color: #d4af37;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        /* Genealogical Tree */
+        .tree-container {
+            background: #2d2d2d;
+            padding: 40px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .tree-root {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .tree-node {
+            background: linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%);
+            border: 2px solid #d4af37;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 200px;
+        }
+
+        .tree-node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .tree-node h3 {
+            color: #d4af37;
+            margin-bottom: 5px;
+        }
+
+        .tree-node p {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .tree-children {
+            margin-left: 50px;
+            padding-left: 20px;
+            border-left: 2px solid #d4af37;
+        }
+
+        /* Map */
+        #map {
+            height: 600px;
+            border-radius: 10px;
+            border: 3px solid #d4af37;
+            z-index: 1;
+        }
+
+        .map-legend {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .legend-color.mother { background: #d4af37; }
+        .legend-color.daughter { background: #4a90d9; }
+        .legend-color.connection { 
+            width: 30px;
+            height: 3px;
+            background: #d4af37;
+            border-radius: 0;
+        }
+
+        /* Municipalities List */
+        .municipalities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .municipality-card {
+            background: linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%);
+            border: 2px solid #444;
+            padding: 20px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .municipality-card:hover {
+            border-color: #d4af37;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .municipality-card h3 {
+            color: #d4af37;
+            margin-bottom: 10px;
+        }
+
+        .municipality-card .info {
+            font-size: 14px;
+            color: #999;
+            margin: 5px 0;
+        }
+
+        /* Timeline */
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 100%;
+            background: #d4af37;
+        }
+
+        .timeline-item {
+            margin: 30px 0;
+            position: relative;
+            width: 50%;
+            padding: 0 40px;
+        }
+
+        .timeline-item:nth-child(odd) {
+            left: 0;
+            text-align: right;
+        }
+
+        .timeline-item:nth-child(even) {
+            left: 50%;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #d4af37;
+            border-radius: 50%;
+            top: 10px;
+        }
+
+        .timeline-item:nth-child(odd)::before {
+            right: -10px;
+        }
+
+        .timeline-item:nth-child(even)::before {
+            left: -10px;
+        }
+
+        .timeline-date {
+            font-size: 24px;
+            color: #d4af37;
+            font-weight: bold;
+        }
+
+        .timeline-content {
+            background: #3d3d3d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        /* Culture Section */
+        .culture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .culture-card {
+            background: linear-gradient(135deg, #3d3d3d 0%, #2d2d2d 100%);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #444;
+            transition: all 0.3s;
+        }
+
+        .culture-card:hover {
+            border-color: #d4af37;
+            transform: translateY(-5px);
+        }
+
+        .culture-card-header {
+            background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+            padding: 20px;
+            color: #1a1a1a;
+        }
+
+        .culture-card-body {
+            padding: 20px;
+        }
+
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            text-align: center;
+            padding: 30px;
+            margin-top: 60px;
+            border-top: 3px solid #d4af37;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .stats {
+                gap: 30px;
+            }
+
+            .stat-number {
+                font-size: 36px;
+            }
+
+            .search-box input {
+                width: 200px;
+            }
+
+            .timeline::before {
+                left: 20px;
+            }
+
+            .timeline-item {
+                width: 100%;
+                left: 0 !important;
+                padding-left: 60px;
+                text-align: left !important;
+            }
+
+            .timeline-item::before {
+                left: 10px !important;
+                right: auto !important;
+            }
+        }
+
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #3d3d3d;
+            border-top: 4px solid #d4af37;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #2d2d2d;
+            padding: 40px;
+            border-radius: 10px;
+            border: 3px solid #d4af37;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: #d4af37;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">Raízes <span>da Bahia</span></div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Buscar município...">
+            </div>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>Raízes da Bahia</h1>
+        <p>A árvore genealógica completa dos municípios baianos — das capitanias hereditárias aos dias de hoje, mais de quatro séculos de história contados pela origem de cada cidade.</p>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-number" id="statMunicipios">417</span>
+                <span class="stat-label">Municípios</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="statAnos">492</span>
+                <span class="stat-label">Anos de História</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="statTroncos">22</span>
+                <span class="stat-label">Troncos Históricos</span>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="showSection('arvore')">
+                <span>🌳</span> Árvore Genealógica
+            </button>
+            <button class="nav-btn" onclick="showSection('mapa')">
+                <span>🗺️</span> Mapa Genealógico
+            </button>
+            <button class="nav-btn" onclick="showSection('municipios')">
+                <span>📋</span> Todos os Municípios
+            </button>
+            <button class="nav-btn" onclick="showSection('timeline')">
+                <span>📅</span> Linha do Tempo
+            </button>
+            <button class="nav-btn" onclick="showSection('cultura')">
+                <span>🎭</span> Cultura & Destaque
+            </button>
+        </div>
+    </section>
+
+    <!-- Árvore Genealógica -->
+    <section id="arvore" class="section">
+        <h2 class="section-title">Árvore Genealógica</h2>
+        <p style="text-align: center; margin-bottom: 30px; color: #ccc;">
+            Explore a genealogia municipal da Bahia. Cada município descende de um núcleo colonial mais antigo. 
+            Clique para expandir os troncos e ver os detalhes de cada cidade.
+        </p>
+        <div class="tree-container" id="treeContainer">
+            <!-- Árvore será gerada dinamicamente -->
+        </div>
+    </section>
+
+    <!-- Mapa -->
+    <section id="mapa" class="section">
+        <h2 class="section-title">Mapa Genealógico da Bahia</h2>
+        <p style="text-align: center; margin-bottom: 30px; color: #ccc;">
+            Visualize no mapa as conexões entre cidades-mãe e cidades-filha. 
+            As linhas douradas mostram a genealogia municipal.
+        </p>
+        <div id="map"></div>
+        <div class="map-legend">
+            <div class="legend-item">
+                <div class="legend-color mother"></div>
+                <span>Cidade-mãe (tronco)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color connection"></div>
+                <span>Conexão genealógica</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color daughter"></div>
+                <span>Cidade-filha</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Municípios -->
+    <section id="municipios" class="section">
+        <h2 class="section-title">Todos os Municípios</h2>
+        <p style="text-align: center; margin-bottom: 30px; color: #ccc;">
+            Grade completa com informações resumidas de cada município baiano, 
+            organizados por região e data de fundação.
+        </p>
+        <div class="municipalities-grid" id="municipiosGrid">
+            <!-- Municípios serão gerados dinamicamente -->
+        </div>
+    </section>
+
+    <!-- Linha do Tempo -->
+    <section id="timeline" class="section">
+        <h2 class="section-title">Linha do Tempo</h2>
+        <p style="text-align: center; margin-bottom: 30px; color: #ccc;">
+            Os marcos mais importantes na formação municipal do estado da Bahia, 
+            do descobrimento à era contemporânea.
+        </p>
+        <div class="timeline" id="timelineContainer">
+            <!-- Timeline será gerada dinamicamente -->
+        </div>
+    </section>
+
+    <!-- Cultura -->
+    <section id="cultura" class="section">
+        <h2 class="section-title">Cultura & Destaques</h2>
+        <p style="text-align: center; margin-bottom: 30px; color: #ccc;">
+            As vocações culturais, turísticas e econômicas que fazem da Bahia um estado único no Brasil.
+        </p>
+        <div class="culture-grid" id="cultureGrid">
+            <!-- Cultura será gerada dinamicamente -->
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Raízes da Bahia - Preservando a história dos municípios baianos</p>
+        <p style="margin-top: 10px; color: #999; font-size: 14px;">
+            Mais de 492 anos de história em uma árvore genealógica completa
+        </p>
+    </footer>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // Dados dos municípios (exemplo dos principais)
+        const municipiosData = [
+            // Tronco: Salvador
+            {
+                nome: "Salvador",
+                fundacao: 1549,
+                regiao: "Salvador",
+                tronco: "Capital",
+                mae: null,
+                lat: -12.9714,
+                lng: -38.5014,
+                populacao: 2886698,
+                descricao: "Primeira capital do Brasil, fundada por Tomé de Sousa."
+            },
+            {
+                nome: "Cachoeira",
+                fundacao: 1698,
+                regiao: "Recôncavo",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.5997,
+                lng: -38.9606,
+                populacao: 32466,
+                descricao: "Importante centro açucareiro do Recôncavo Baiano."
+            },
+            {
+                nome: "Santo Amaro",
+                fundacao: 1755,
+                regiao: "Recôncavo",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.5464,
+                lng: -38.7142,
+                populacao: 61249,
+                descricao: "Berço de grandes artistas como Caetano Veloso e Gilberto Gil."
+            },
+            {
+                nome: "Feira de Santana",
+                fundacao: 1833,
+                regiao: "Centro-Norte",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.2664,
+                lng: -38.9663,
+                populacao: 619609,
+                descricao: "Segunda maior cidade da Bahia, importante centro comercial."
+            },
+            
+            // Tronco: Ilhéus
+            {
+                nome: "Ilhéus",
+                fundacao: 1535,
+                regiao: "Sul",
+                tronco: "Capitania de Ilhéus",
+                mae: null,
+                lat: -14.7889,
+                lng: -39.0497,
+                populacao: 154765,
+                descricao: "Antiga capital da capitania de Ilhéus, terra do cacau."
+            },
+            {
+                nome: "Itabuna",
+                fundacao: 1910,
+                regiao: "Sul",
+                tronco: "Capitania de Ilhéus",
+                mae: "Ilhéus",
+                lat: -14.7858,
+                lng: -39.2803,
+                populacao: 213223,
+                descricao: "Principal centro urbano do sul da Bahia, região cacaueira."
+            },
+            {
+                nome: "Itajuípe",
+                fundacao: 1890,
+                regiao: "Sul",
+                tronco: "Capitania de Ilhéus",
+                mae: "Ilhéus",
+                lat: -14.6769,
+                lng: -39.3731,
+                populacao: 18071,
+                descricao: "Município da região cacaueira."
+            },
+
+            // Tronco: Porto Seguro
+            {
+                nome: "Porto Seguro",
+                fundacao: 1534,
+                regiao: "Extremo Sul",
+                tronco: "Capitania de Porto Seguro",
+                mae: null,
+                lat: -16.4497,
+                lng: -39.0647,
+                populacao: 147690,
+                descricao: "Local do descobrimento do Brasil, primeira capital da capitania."
+            },
+            {
+                nome: "Santa Cruz Cabrália",
+                fundacao: 1997,
+                regiao: "Extremo Sul",
+                tronco: "Capitania de Porto Seguro",
+                mae: "Porto Seguro",
+                lat: -16.2833,
+                lng: -39.0333,
+                populacao: 27496,
+                descricao: "Local da primeira missa no Brasil."
+            },
+
+            // Tronco: Feira de Santana (ramificações)
+            {
+                nome: "Alagoinhas",
+                fundacao: 1852,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Feira de Santana",
+                lat: -12.1339,
+                lng: -38.4197,
+                populacao: 155621,
+                descricao: "Importante polo industrial e comercial."
+            },
+            {
+                nome: "Serrinha",
+                fundacao: 1919,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Feira de Santana",
+                lat: -11.6669,
+                lng: -38.9736,
+                populacao: 80383,
+                descricao: "Município do sisal."
+            },
+
+            // Tronco: Jacobina
+            {
+                nome: "Jacobina",
+                fundacao: 1720,
+                regiao: "Centro-Norte",
+                tronco: "Sertão",
+                mae: null,
+                lat: -11.1839,
+                lng: -40.5169,
+                populacao: 82694,
+                descricao: "Cidade histórica da região de mineração de ouro."
+            },
+            {
+                nome: "Mirangaba",
+                fundacao: 1962,
+                regiao: "Centro-Norte",
+                tronco: "Sertão",
+                mae: "Jacobina",
+                lat: -10.9167,
+                lng: -40.1167,
+                populacao: 15366,
+                descricao: "Município da região de Jacobina."
+            },
+
+            // Tronco: Jequié
+            {
+                nome: "Jequié",
+                fundacao: 1910,
+                regiao: "Sudoeste",
+                tronco: "Sertão",
+                mae: null,
+                lat: -13.8583,
+                lng: -40.0833,
+                populacao: 166092,
+                descricao: "Cidade do sol, importante centro regional."
+            },
+            {
+                nome: "Ipiaú",
+                fundacao: 1952,
+                regiao: "Sul",
+                tronco: "Sertão",
+                mae: "Jequié",
+                lat: -14.1253,
+                lng: -39.7386,
+                populacao: 46970,
+                descricao: "Município da região sudoeste."
+            },
+
+            // Tronco: Vitória da Conquista
+            {
+                nome: "Vitória da Conquista",
+                fundacao: 1840,
+                regiao: "Sudoeste",
+                tronco: "Sertão",
+                mae: null,
+                lat: -14.8619,
+                lng: -40.8442,
+                populacao: 346069,
+                descricao: "Terceira maior cidade da Bahia, conhecida como Suíça Baiana."
+            },
+            {
+                nome: "Poções",
+                fundacao: 1952,
+                regiao: "Sudoeste",
+                tronco: "Sertão",
+                mae: "Vitória da Conquista",
+                lat: -14.5167,
+                lng: -40.3667,
+                populacao: 50562,
+                descricao: "Município da região de Conquista."
+            },
+
+            // Tronco: Juazeiro
+            {
+                nome: "Juazeiro",
+                fundacao: 1833,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: null,
+                lat: -9.4111,
+                lng: -40.4986,
+                populacao: 218162,
+                descricao: "Importante cidade do Vale do São Francisco."
+            },
+            {
+                nome: "Petrolina",
+                fundacao: 1895,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Juazeiro",
+                lat: -9.3891,
+                lng: -40.503,
+                populacao: 343275,
+                descricao: "Polo de fruticultura irrigada (PE, mas conectada à Bahia)."
+            },
+
+            // Tronco: Barreiras
+            {
+                nome: "Barreiras",
+                fundacao: 1902,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: null,
+                lat: -12.1528,
+                lng: -44.99,
+                populacao: 158188,
+                descricao: "Principal cidade do oeste baiano, polo agrícola."
+            },
+            {
+                nome: "Luís Eduardo Magalhães",
+                fundacao: 2000,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -12.1,
+                lng: -45.8,
+                populacao: 76673,
+                descricao: "Cidade jovem do agronegócio."
+            },
+
+            // Tronco: Bom Jesus da Lapa
+            {
+                nome: "Bom Jesus da Lapa",
+                fundacao: 1952,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: null,
+                lat: -13.25,
+                lng: -43.4167,
+                populacao: 66818,
+                descricao: "Importante centro de romaria religiosa."
+            },
+
+            // Tronco: Senhor do Bonfim
+            {
+                nome: "Senhor do Bonfim",
+                fundacao: 1760,
+                regiao: "Centro-Norte",
+                tronco: "Sertão",
+                mae: null,
+                lat: -10.4597,
+                lng: -40.1881,
+                populacao: 77260,
+                descricao: "Famosa pela festa do Bonfim e artesanato."
+            },
+
+            // Tronco: Valença
+            {
+                nome: "Valença",
+                fundacao: 1831,
+                regiao: "Sul",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -13.3731,
+                lng: -39.0731,
+                populacao: 94795,
+                descricao: "Cidade histórica do sul da Bahia."
+            },
+
+            // Tronco: Cruz das Almas
+            {
+                nome: "Cruz das Almas",
+                fundacao: 1952,
+                regiao: "Recôncavo",
+                tronco: "Salvador",
+                mae: "Santo Amaro",
+                lat: -12.6669,
+                lng: -39.1053,
+                populacao: 63692,
+                descricao: "Sede do campus da UFRB."
+            },
+
+            // Tronco: Amargosa
+            {
+                nome: "Amargosa",
+                fundacao: 1890,
+                regiao: "Recôncavo",
+                tronco: "Salvador",
+                mae: "Cachoeira",
+                lat: -13.0269,
+                lng: -39.6042,
+                populacao: 35466,
+                descricao: "Conhecida pelo cordel e literatura de folheto."
+            },
+
+            // Tronco: Itapetinga
+            {
+                nome: "Itapetinga",
+                fundacao: 1952,
+                regiao: "Sudoeste",
+                tronco: "Sertão",
+                mae: "Vitória da Conquista",
+                lat: -15.2486,
+                lng: -40.2486,
+                populacao: 73090,
+                descricao: "Importante polo regional do sudoeste."
+            },
+
+            // Tronco: Eunápolis
+            {
+                nome: "Eunápolis",
+                fundacao: 1988,
+                regiao: "Extremo Sul",
+                tronco: "Capitania de Porto Seguro",
+                mae: "Porto Seguro",
+                lat: -16.3769,
+                lng: -39.5828,
+                populacao: 116236,
+                descricao: "Cidade jovem em crescimento no extremo sul."
+            },
+
+            // Tronco: Teixeira de Freitas
+            {
+                nome: "Teixeira de Freitas",
+                fundacao: 1985,
+                regiao: "Extremo Sul",
+                tronco: "Capitania de Porto Seguro",
+                mae: "Porto Seguro",
+                lat: -17.5397,
+                lng: -39.7428,
+                populacao: 158929,
+                descricao: "Principal cidade do extremo sul baiano."
+            },
+
+            // Tronco: Guanambi
+            {
+                nome: "Guanambi",
+                fundacao: 1952,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: null,
+                lat: -14.2228,
+                lng: -42.7786,
+                populacao: 83005,
+                descricao: "Polo regional do centro-sul baiano."
+            },
+
+            // Tronco: Brumado
+            {
+                nome: "Brumado",
+                fundacao: 1952,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Vitória da Conquista",
+                lat: -14.2031,
+                lng: -41.6708,
+                populacao: 70161,
+                descricao: "Conhecida pela mineração de magnesita."
+            },
+
+            // Tronco: Paulo Afonso
+            {
+                nome: "Paulo Afonso",
+                fundacao: 1958,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Juazeiro",
+                lat: -9.3986,
+                lng: -38.2136,
+                populacao: 120474,
+                descricao: "Cidade da energia, sede da Chesf."
+            },
+
+            // Tronco: Ribeira do Pombal
+            {
+                nome: "Ribeira do Pombal",
+                fundacao: 1890,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Feira de Santana",
+                lat: -10.8386,
+                lng: -38.5386,
+                populacao: 51139,
+                descricao: "Importante cidade do nordeste baiano."
+            },
+
+            // Tronco: Euclides da Cunha
+            {
+                nome: "Euclides da Cunha",
+                fundacao: 1909,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Feira de Santana",
+                lat: -10.5086,
+                lng: -39.0153,
+                populacao: 56616,
+                descricao: "Terra de Os Sertões, de Euclides da Cunha."
+            },
+
+            // Tronco: Irecê
+            {
+                nome: "Irecê",
+                fundacao: 1952,
+                regiao: "Centro-Norte",
+                tronco: "Sertão",
+                mae: null,
+                lat: -11.3167,
+                lng: -41.85,
+                populacao: 74266,
+                descricao: "Polo da feijão no centro-norte."
+            },
+
+            // Tronco: Xique-Xique
+            {
+                nome: "Xique-Xique",
+                fundacao: 1833,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: null,
+                lat: -10.8236,
+                lng: -42.7286,
+                populacao: 46669,
+                descricao: "Cidade histórica às margens do São Francisco."
+            },
+
+            // Tronco: Campo Formoso
+            {
+                nome: "Campo Formoso",
+                fundacao: 1833,
+                regiao: "Centro-Norte",
+                tronco: "Sertão",
+                mae: null,
+                lat: -10.5103,
+                lng: -40.3247,
+                populacao: 72667,
+                descricao: "Conhecida pelo artesanato em couro."
+            },
+
+            // Tronco: Canudos
+            {
+                nome: "Canudos",
+                fundacao: 1983,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Feira de Santana",
+                lat: -9.9486,
+                lng: -39.1286,
+                populacao: 16083,
+                descricao: "Local histórico da Guerra de Canudos."
+            },
+
+            // Tronco: Itaparica
+            {
+                nome: "Itaparica",
+                fundacao: 1831,
+                regiao: "Salvador",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.8897,
+                lng: -38.6797,
+                populacao: 21236,
+                descricao: "Ilha turística na Baía de Todos-os-Santos."
+            },
+
+            // Tronco: Lauro de Freitas
+            {
+                nome: "Lauro de Freitas",
+                fundacao: 1962,
+                regiao: "Salvador",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.8944,
+                lng: -38.3225,
+                populacao: 201635,
+                descricao: "Cidade metropolitana próxima ao aeroporto."
+            },
+
+            // Tronco: Camaçari
+            {
+                nome: "Camaçari",
+                fundacao: 1962,
+                regiao: "Salvador",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.6975,
+                lng: -38.3242,
+                populacao: 296893,
+                descricao: "Polo petroquímico e industrial."
+            },
+
+            // Tronco: Dias d'Ávila
+            {
+                nome: "Dias d'Ávila",
+                fundacao: 1989,
+                regiao: "Salvador",
+                tronco: "Salvador",
+                mae: "Camaçari",
+                lat: -12.6108,
+                lng: -38.2947,
+                populacao: 80019,
+                descricao: "Município desmembrado de Camaçari."
+            },
+
+            // Tronco: Simões Filho
+            {
+                nome: "Simões Filho",
+                fundacao: 1962,
+                regiao: "Salvador",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.7869,
+                lng: -38.4053,
+                populacao: 133551,
+                descricao: "Cidade industrial da região metropolitana."
+            },
+
+            // Tronco: Candeias
+            {
+                nome: "Candeias",
+                fundacao: 1958,
+                regiao: "Recôncavo",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.6747,
+                lng: -38.5428,
+                populacao: 84758,
+                descricao: "Polo petroquímico do Recôncavo."
+            },
+
+            // Tronco: Madre de Deus
+            {
+                nome: "Madre de Deus",
+                fundacao: 1989,
+                regiao: "Recôncavo",
+                tronco: "Salvador",
+                mae: "Candeias",
+                lat: -12.7536,
+                lng: -38.6169,
+                populacao: 18447,
+                descricao: "Ilha com terminal petrolífero."
+            },
+
+            // Tronco: São Francisco do Conde
+            {
+                nome: "São Francisco do Conde",
+                fundacao: 1962,
+                regiao: "Recôncavo",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.6236,
+                lng: -38.6769,
+                populacao: 32582,
+                descricao: "Polo petroquímico e histórico."
+            },
+
+            // Tronco: Vera Cruz
+            {
+                nome: "Vera Cruz",
+                fundacao: 1952,
+                regiao: "Salvador",
+                tronco: "Salvador",
+                mae: "Salvador",
+                lat: -12.9669,
+                lng: -38.8169,
+                populacao: 41076,
+                descricao: "Ilha de Itaparica, turismo e pesca."
+            },
+
+            // Tronco: Jaguaquara
+            {
+                nome: "Jaguaquara",
+                fundacao: 1952,
+                regiao: "Sul",
+                tronco: "Salvador",
+                mae: "Valença",
+                lat: -13.5269,
+                lng: -39.9642,
+                populacao: 53532,
+                descricao: "Município do sul baiano."
+            },
+
+            // Tronco: Lençóis
+            {
+                nome: "Lençóis",
+                fundacao: 1952,
+                regiao: "Centro-Norte",
+                tronco: "Sertão",
+                mae: "Jacobina",
+                lat: -12.5636,
+                lng: -41.3886,
+                populacao: 11364,
+                descricao: "Porta de entrada da Chapada Diamantina."
+            },
+
+            // Tronco: Mucugê
+            {
+                nome: "Mucugê",
+                fundacao: 1952,
+                regiao: "Centro-Norte",
+                tronco: "Sertão",
+                mae: "Jacobina",
+                lat: -13.0036,
+                lng: -41.3703,
+                populacao: 11765,
+                descricao: "Cidade histórica da Chapada Diamantina."
+            },
+
+            // Tronco: Andaraí
+            {
+                nome: "Andaraí",
+                fundacao: 1952,
+                regiao: "Centro-Norte",
+                tronco: "Sertão",
+                mae: "Jacobina",
+                lat: -12.8036,
+                lng: -41.3286,
+                populacao: 14745,
+                descricao: "Chapada Diamantina, turismo ecológico."
+            },
+
+            // Tronco: Seabra
+            {
+                nome: "Seabra",
+                fundacao: 1952,
+                regiao: "Centro-Norte",
+                tronco: "Sertão",
+                mae: "Jacobina",
+                lat: -12.4169,
+                lng: -41.7836,
+                populacao: 45388,
+                descricao: "Chapada Diamantina."
+            },
+
+            // Tronco: Ituaçu
+            {
+                nome: "Ituaçu",
+                fundacao: 1952,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Vitória da Conquista",
+                lat: -13.8436,
+                lng: -41.2936,
+                populacao: 22140,
+                descricao: "Região de Conquista."
+            },
+
+            // Tronco: Livramento de Nossa Senhora
+            {
+                nome: "Livramento de Nossa Senhora",
+                fundacao: 1952,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Vitória da Conquista",
+                lat: -13.6436,
+                lng: -41.8336,
+                populacao: 46949,
+                descricao: "Cidade da região de Conquista."
+            },
+
+            // Tronco: Macaúbas
+            {
+                nome: "Macaúbas",
+                fundacao: 1952,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Bom Jesus da Lapa",
+                lat: -13.0236,
+                lng: -42.6936,
+                populacao: 48127,
+                descricao: "Região oeste baiano."
+            },
+
+            // Tronco: Botuporã
+            {
+                nome: "Botuporã",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Bom Jesus da Lapa",
+                lat: -13.4436,
+                lng: -42.5336,
+                populacao: 11033,
+                descricao: "Município do oeste baiano."
+            },
+
+            // Tronco: Barra
+            {
+                nome: "Barra",
+                fundacao: 1833,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: null,
+                lat: -11.0836,
+                lng: -43.1436,
+                populacao: 55151,
+                descricao: "Confluência dos rios Grande e São Francisco."
+            },
+
+            // Tronco: Santa Maria da Vitória
+            {
+                nome: "Santa Maria da Vitória",
+                fundacao: 1890,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -11.9636,
+                lng: -44.2036,
+                populacao: 41607,
+                descricao: "Oeste baiano."
+            },
+
+            // Tronco: Formosa do Rio Preto
+            {
+                nome: "Formosa do Rio Preto",
+                fundacao: 1985,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -11.0136,
+                lng: -45.2036,
+                populacao: 30061,
+                descricao: "Agronegócio no oeste baiano."
+            },
+
+            // Tronco: São Desidério
+            {
+                nome: "São Desidério",
+                fundacao: 1989,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -12.3436,
+                lng: -44.9736,
+                populacao: 27157,
+                descricao: "Maior município em área da Bahia."
+            },
+
+            // Tronco: Catu
+            {
+                nome: "Catu",
+                fundacao: 1850,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Feira de Santana",
+                lat: -12.3536,
+                lng: -38.3803,
+                populacao: 61600,
+                descricao: "Polo petroquímico."
+            },
+
+            // Tronco: Esplanada
+            {
+                nome: "Esplanada",
+                fundacao: 1985,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Alagoinhas",
+                lat: -11.7936,
+                lng: -37.9436,
+                populacao: 34036,
+                descricao: "Litoral norte."
+            },
+
+            // Tronco: Entre Rios
+            {
+                nome: "Entre Rios",
+                fundacao: 1985,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Alagoinhas",
+                lat: -11.9336,
+                lng: -38.0836,
+                populacao: 40000,
+                descricao: "Litoral norte."
+            },
+
+            // Tronco: Inhambupe
+            {
+                nome: "Inhambupe",
+                fundacao: 1890,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Feira de Santana",
+                lat: -11.7836,
+                lng: -38.3536,
+                populacao: 37486,
+                descricao: "Nordeste baiano."
+            },
+
+            // Tronco: Sátiro Dias
+            {
+                nome: "Sátiro Dias",
+                fundacao: 1985,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Alagoinhas",
+                lat: -11.5836,
+                lng: -38.6236,
+                populacao: 19119,
+                descricao: "Nordeste baiano."
+            },
+
+            // Tronco: Olindina
+            {
+                nome: "Olindina",
+                fundacao: 1985,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Ribeira do Pombal",
+                lat: -10.8536,
+                lng: -38.2536,
+                populacao: 26808,
+                descricao: "Nordeste baiano."
+            },
+
+            // Tronco: Nova Soure
+            {
+                nome: "Nova Soure",
+                fundacao: 1985,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Ribeira do Pombal",
+                lat: -11.2236,
+                lng: -38.6836,
+                populacao: 27434,
+                descricao: "Nordeste baiano."
+            },
+
+            // Tronco: Quijingue
+            {
+                nome: "Quijingue",
+                fundacao: 1985,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Euclides da Cunha",
+                lat: -10.7536,
+                lng: -39.2436,
+                populacao: 29703,
+                descricao: "Nordeste baiano."
+            },
+
+            // Tronco: Tucano
+            {
+                nome: "Tucano",
+                fundacao: 1890,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Feira de Santana",
+                lat: -10.9536,
+                lng: -38.7936,
+                populacao: 54386,
+                descricao: "Nordeste baiano."
+            },
+
+            // Tronco: Monte Santo
+            {
+                nome: "Monte Santo",
+                fundacao: 1890,
+                regiao: "Nordeste",
+                tronco: "Salvador",
+                mae: "Feira de Santana",
+                lat: -10.4336,
+                lng: -39.3236,
+                populacao: 55017,
+                descricao: "Serra do Monte Santo."
+            },
+
+            // Tronco: Uauá
+            {
+                nome: "Uauá",
+                fundacao: 1952,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Juazeiro",
+                lat: -9.8336,
+                lng: -39.4736,
+                populacao: 28818,
+                descricao: "Sertão do São Francisco."
+            },
+
+            // Tronco: Curaçá
+            {
+                nome: "Curaçá",
+                fundacao: 1890,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Juazeiro",
+                lat: -9.0136,
+                lng: -39.8936,
+                populacao: 33418,
+                descricao: "Vale do São Francisco."
+            },
+
+            // Tronco: Sobradinho
+            {
+                nome: "Sobradinho",
+                fundacao: 1980,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Juazeiro",
+                lat: -9.4136,
+                lng: -40.8136,
+                populacao: 20406,
+                descricao: "Cidade da barragem de Sobradinho."
+            },
+
+            // Tronco: Casa Nova
+            {
+                nome: "Casa Nova",
+                fundacao: 1890,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Juazeiro",
+                lat: -9.1536,
+                lng: -40.9736,
+                populacao: 72443,
+                descricao: "Vale do São Francisco."
+            },
+
+            // Tronco: Pilão Arcado
+            {
+                nome: "Pilão Arcado",
+                fundacao: 1890,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Juazeiro",
+                lat: -10.0136,
+                lng: -42.5036,
+                populacao: 33762,
+                descricao: "Sertão do São Francisco."
+            },
+
+            // Tronco: Remanso
+            {
+                nome: "Remanso",
+                fundacao: 1890,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Juazeiro",
+                lat: -9.6236,
+                lng: -42.0836,
+                populacao: 42108,
+                descricao: "Vale do São Francisco."
+            },
+
+            // Tronco: Santo Sé
+            {
+                nome: "Santo Sé",
+                fundacao: 1985,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Juazeiro",
+                lat: -10.0336,
+                lng: -41.9336,
+                populacao: 17198,
+                descricao: "Vale do São Francisco."
+            },
+
+            // Tronco: Campo Alegre de Lourdes
+            {
+                nome: "Campo Alegre de Lourdes",
+                fundacao: 1952,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Bom Jesus da Lapa",
+                lat: -9.6536,
+                lng: -43.0136,
+                populacao: 29088,
+                descricao: "Oeste baiano."
+            },
+
+            // Tronco: Feira da Mata
+            {
+                nome: "Feira da Mata",
+                fundacao: 1985,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Bom Jesus da Lapa",
+                lat: -14.2136,
+                lng: -44.2836,
+                populacao: 17616,
+                descricao: "Oeste baiano."
+            },
+
+            // Tronco: Correntina
+            {
+                nome: "Correntina",
+                fundacao: 1952,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -13.3436,
+                lng: -44.6336,
+                populacao: 33350,
+                descricao: "Agronegócio no oeste."
+            },
+
+            // Tronco: Catolândia
+            {
+                nome: "Catolândia",
+                fundacao: 1985,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -12.6636,
+                lng: -44.4036,
+                populacao: 3433,
+                descricao: "Oeste baiano."
+            },
+
+            // Tronco: Cristópolis
+            {
+                nome: "Cristópolis",
+                fundacao: 1985,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -12.2336,
+                lng: -44.4236,
+                populacao: 14506,
+                descricao: "Oeste baiano."
+            },
+
+            // Tronco: Angical
+            {
+                nome: "Angical",
+                fundacao: 1985,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -12.0536,
+                lng: -44.7336,
+                populacao: 15739,
+                descricao: "Oeste baiano."
+            },
+
+            // Tronco: Baianópolis
+            {
+                nome: "Baianópolis",
+                fundacao: 1985,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -12.3036,
+                lng: -44.5436,
+                populacao: 13346,
+                descricao: "Oeste baiano."
+            },
+
+            // Tronco: Riachão das Neves
+            {
+                nome: "Riachão das Neves",
+                fundacao: 1985,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -11.5136,
+                lng: -44.9236,
+                populacao: 26969,
+                descricao: "Agronegócio."
+            },
+
+            // Tronco: São Félix do Coribe
+            {
+                nome: "São Félix do Coribe",
+                fundacao: 1985,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -13.4136,
+                lng: -44.0736,
+                populacao: 13662,
+                descricao: "Oeste baiano."
+            },
+
+            // Tronco: Jaborandi
+            {
+                nome: "Jaborandi",
+                fundacao: 1985,
+                regiao: "Oeste",
+                tronco: "Oeste Baiano",
+                mae: "Barreiras",
+                lat: -13.6136,
+                lng: -44.4236,
+                populacao: 9598,
+                descricao: "Oeste baiano."
+            },
+
+            // Tronco: Serra do Ramalho
+            {
+                nome: "Serra do Ramalho",
+                fundacao: 1985,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Bom Jesus da Lapa",
+                lat: -13.4536,
+                lng: -43.5836,
+                populacao: 32337,
+                descricao: "Vale do São Francisco."
+            },
+
+            // Tronco: Malhada
+            {
+                nome: "Malhada",
+                fundacao: 1952,
+                regiao: "Vale do São Francisco",
+                tronco: "São Francisco",
+                mae: "Bom Jesus da Lapa",
+                lat: -14.3136,
+                lng: -43.7736,
+                populacao: 16757,
+                descricao: "Vale do São Francisco."
+            },
+
+            // Tronco: Carinhanha
+            {
+                nome: "Carinhanha",
+                fundacao: 1952,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Bom Jesus da Lapa",
+                lat: -14.3036,
+                lng: -43.7836,
+                populacao: 28456,
+                descricao: "Vale do São Francisco."
+            },
+
+            // Tronco: Serra Preta
+            {
+                nome: "Serra Preta",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Bom Jesus da Lapa",
+                lat: -13.7136,
+                lng: -42.6836,
+                populacao: 8318,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Iuiú
+            {
+                nome: "Iuiú",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Bom Jesus da Lapa",
+                lat: -13.5136,
+                lng: -43.5336,
+                populacao: 11459,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Riacho de Santana
+            {
+                nome: "Riacho de Santana",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Bom Jesus da Lapa",
+                lat: -13.6136,
+                lng: -43.0836,
+                populacao: 23706,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Paratinga
+            {
+                nome: "Paratinga",
+                fundacao: 1952,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Bom Jesus da Lapa",
+                lat: -12.7136,
+                lng: -43.2336,
+                populacao: 27275,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Ibipitanga
+            {
+                nome: "Ibipitanga",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Bom Jesus da Lapa",
+                lat: -13.0136,
+                lng: -42.4836,
+                populacao: 14851,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Tanque Novo
+            {
+                nome: "Tanque Novo",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Guanambi",
+                lat: -14.4136,
+                lng: -42.5336,
+                populacao: 18000,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Caetité
+            {
+                nome: "Caetité",
+                fundacao: 1833,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: null,
+                lat: -14.0636,
+                lng: -42.4836,
+                populacao: 50000,
+                descricao: "Cidade histórica do centro-sul."
+            },
+
+            // Tronco: Igaporã
+            {
+                nome: "Igaporã",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.3136,
+                lng: -42.7336,
+                populacao: 13570,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Pindaí
+            {
+                nome: "Pindaí",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.4136,
+                lng: -42.7136,
+                populacao: 16765,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Caculé
+            {
+                nome: "Caculé",
+                fundacao: 1952,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.5036,
+                lng: -42.2236,
+                populacao: 23162,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Guajeru
+            {
+                nome: "Guajeru",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.5636,
+                lng: -41.9436,
+                populacao: 8498,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Mortugaba
+            {
+                nome: "Mortugaba",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.8636,
+                lng: -42.2736,
+                populacao: 11459,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Riacho do Meio
+            {
+                nome: "Riacho do Meio",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.7136,
+                lng: -42.0636,
+                populacao: 3433,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Palmas de Monte Alto
+            {
+                nome: "Palmas de Monte Alto",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.2636,
+                lng: -43.1636,
+                populacao: 21337,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Matina
+            {
+                nome: "Matina",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -13.9136,
+                lng: -42.8836,
+                populacao: 13346,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Candiba
+            {
+                nome: "Candiba",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.5636,
+                lng: -42.8336,
+                populacao: 13633,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Sebastião Laranjeiras
+            {
+                nome: "Sebastião Laranjeiras",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.6136,
+                lng: -42.9136,
+                populacao: 10488,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Malhada de Pedras
+            {
+                nome: "Malhada de Pedras",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.4636,
+                lng: -42.3336,
+                populacao: 8318,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Lagoa Real
+            {
+                nome: "Lagoa Real",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.0336,
+                lng: -42.1336,
+                populacao: 15198,
+                descricao: "Urânio."
+            },
+
+            // Tronco: Maniaçu
+            {
+                nome: "Maniaçu",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Caetité",
+                lat: -14.2636,
+                lng: -42.0336,
+                populacao: 3433,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Urandi
+            {
+                nome: "Urandi",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Guanambi",
+                lat: -14.7636,
+                lng: -42.6336,
+                populacao: 19198,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Ibiassucê
+            {
+                nome: "Ibiassucê",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Guanambi",
+                lat: -14.8136,
+                lng: -41.3636,
+                populacao: 11765,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Jacaraci
+            {
+                nome: "Jacaraci",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Guanambi",
+                lat: -14.8636,
+                lng: -42.1636,
+                populacao: 14851,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Guanambi (filhos)
+            {
+                nome: "Monte Gordo",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Guanambi",
+                lat: -14.3636,
+                lng: -42.6836,
+                populacao: 5433,
+                descricao: "Centro-sul baiano."
+            },
+
+            // Tronco: Pindaí (filhos)
+            {
+                nome: "Caculé (ramo)",
+                fundacao: 1985,
+                regiao: "Centro-Sul",
+                tronco: "Sertão",
+                mae: "Pindaí",
+                lat: -14.5036,
+                lng: -42.2236,
+                populacao: 23162,
+                descricao: "Centro-sul baiano."
+            }
+        ];
+
+        // Timeline data
+        const timelineData = [
+            { ano: 1500, evento: "Descobrimento do Brasil", descricao: "Pedro Álvares Cabral chega a Porto Seguro, marcando o início da história brasileira." },
+            { ano: 1534, evento: "Capitanias Hereditárias", descricao: "Criação do sistema de capitanias hereditárias, incluindo Porto Seguro e Ilhéus." },
+            { ano: 1549, evento: "Fundação de Salvador", descricao: "Tomé de Sousa funda Salvador, primeira capital do Brasil." },
+            { ano: 1624, evento: "Invasão Holandesa", descricao: "Holandeses invadem Salvador, ocupando a cidade por um ano." },
+            { ano: 1754, evento: "Fim das Capitanias", descricao: "Extinção do sistema de capitanias hereditárias na Bahia." },
+            { ano: 1822, evento: "Independência da Bahia", descricao: "2 de julho - Independência da Bahia do domínio português." },
+            { ano: 1833, evento: "Primeiras Emancipações", descricao: "Onda de criação de municípios após a independência." },
+            { ano: 1890, evento: "República e Novos Municípios", descricao: "Proclamação da República impulsiona criação de novos municípios." },
+            { ano: 1910, evento: "Ciclo do Cacau", descricao: "Auge do ciclo do cacau no sul da Bahia cria novos municípios." },
+            { ano: 1952, evento: "Grande Emancipação", descricao: "Lei estadual cria dezenas de novos municípios baianos." },
+            { ano: 1962, evento: "Desenvolvimento Industrial", descricao: "Criação de municípios na região metropolitana de Salvador." },
+            { ano: 1985, evento: "Nova Onda de Emancipações", descricao: "Constituição de 1988 permite nova onda de criação de municípios." },
+            { ano: 2026, evento: "417 Municípios", descricao: "Bahia consolida seus 417 municípios, preservando sua rica história." }
+        ];
+
+        // Culture data
+        const cultureData = [
+            {
+                titulo: "Recôncavo Baiano",
+                subtitulo: "Patrimônio Cultural",
+                descricao: "Região berço da cultura afro-brasileira, com cidades históricas como Cachoeira e Santo Amaro, preservando tradições do samba de roda, capoeira e culinária baiana.",
+                icone: "🎭"
+            },
+            {
+                titulo: "Chapada Diamantina",
+                subtitulo: "Turismo Ecológico",
+                descricao: "Parque Nacional com cachoeiras, grutas e trilhas. Cidades históricas da mineração de diamantes como Lençóis e Mucugê preservam arquitetura colonial.",
+                icone: "🏞️"
+            },
+            {
+                titulo: "Litoral Sul",
+                subtitulo: "Praias e Descobrimento",
+                descricao: "De Porto Seguro a Trancoso, berço do descobrimento, com praias paradisíacas, cultura indígena e portuguesa, e vida noturna vibrante.",
+                icone: "🏖️"
+            },
+            {
+                titulo: "Vale do São Francisco",
+                subtitulo: "Fruticultura Irrigada",
+                descricao: "Polo de produção de frutas tropicais para exportação, com uvas, mangas e melões. Desenvolvimento econômico do sertão baiano.",
+                icone: "🍇"
+            },
+            {
+                titulo: "Oeste Baiano",
+                subtitulo: "Agronegócio",
+                descricao: "Região de Barreiras e Luís Eduardo Magalhães, maior produtor de grãos da Bahia, com soja, milho e algodão em larga escala.",
+                icone: "🌾"
+            },
+            {
+                titulo: "Salvador",
+                subtitulo: "Cultura e História",
+                descricao: "Primeira capital do Brasil, com Pelourinho Patrimônio Mundial, carnaval, axé music, capoeira, e rica gastronomia afro-brasileira.",
+                icone: "🎉"
+            }
+        ];
+
+        // Initialize
+        let map;
+        let markers = [];
+        let currentSection = 'home';
+
+        // Show section
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            const section = document.getElementById(sectionName);
+            if (section) {
+                section.classList.add('active');
+                currentSection = sectionName;
+                
+                // Initialize specific features
+                if (sectionName === 'mapa') {
+                    setTimeout(initMap, 100);
+                } else if (sectionName === 'arvore') {
+                    initTree();
+                } else if (sectionName === 'municipios') {
+                    initMunicipios();
+                } else if (sectionName === 'timeline') {
+                    initTimeline();
+                } else if (sectionName === 'cultura') {
+                    initCultura();
+                }
+                
+                // Scroll to section
+                section.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Initialize Tree
+        function initTree() {
+            const container = document.getElementById('treeContainer');
+            if (container.innerHTML.trim() !== '') return; // Already initialized
+            
+            // Group by tronco
+            const troncos = {};
+            municipiosData.forEach(m => {
+                if (!troncos[m.tronco]) {
+                    troncos[m.tronco] = [];
+                }
+                if (!m.mae) {
+                    troncos[m.tronco].push(m);
+                }
+            });
+            
+            let html = '';
+            for (const [tronco, cidades] of Object.entries(troncos)) {
+                html += `
+                    <div class="tree-root">
+                        <div class="tree-node" onclick="toggleTree(this)">
+                            <h3>${tronco}</h3>
+                            <p>${cidades.length} municípios fundadores</p>
+                        </div>
+                        <div class="tree-children" style="display: none;">
+                `;
+                
+                cidades.forEach(cidade => {
+                    const filhos = municipiosData.filter(m => m.mae === cidade.nome);
+                    html += `
+                        <div class="tree-node" onclick="showMunicipioDetails('${cidade.nome}')">
+                            <h3>${cidade.nome}</h3>
+                            <p>Fundação: ${cidade.fundacao}</p>
+                            <p>Região: ${cidade.regiao}</p>
+                            ${filhos.length > 0 ? `<p style="color: #d4af37; margin-top: 5px;">→ ${filhos.length} cidades-filhas</p>` : ''}
+                        </div>
+                    `;
+                    
+                    if (filhos.length > 0) {
+                        html += `<div style="margin-left: 30px; margin-top: 10px;">`;
+                        filhos.slice(0, 5).forEach(filho => {
+                            html += `
+                                <div class="tree-node" style="min-width: 150px; font-size: 14px;" onclick="showMunicipioDetails('${filho.nome}')">
+                                    <h4 style="color: #4a90d9;">${filho.nome}</h4>
+                                    <p>${filho.fundacao}</p>
+                                </div>
+                            `;
+                        });
+                        if (filhos.length > 5) {
+                            html += `<p style="color: #999; margin-top: 10px;">+${filhos.length - 5} outras cidades...</p>`;
+                        }
+                        html += `</div>`;
+                    }
+                });
+                
+                html += `</div></div>`;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function toggleTree(element) {
+            const children = element.nextElementSibling;
+            if (children && children.classList.contains('tree-children')) {
+                children.style.display = children.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Initialize Map
+        function initMap() {
+            if (map) return; // Already initialized
+            
+            map = L.map('map').setView([-12.5, -41.5], 6);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Add markers
+            municipiosData.forEach(m => {
+                if (m.lat && m.lng) {
+                    const color = m.mae ? '#4a90d9' : '#d4af37';
+                    const radius = m.mae ? 4 : 8;
+                    
+                    const circle = L.circleMarker([m.lat, m.lng], {
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.7,
+                        radius: radius
+                    }).addTo(map);
+                    
+                    circle.bindPopup(`
+                        <strong>${m.nome}</strong><br>
+                        Fundação: ${m.fundacao}<br>
+                        Região: ${m.regiao}<br>
+                        População: ${m.populacao ? m.populacao.toLocaleString() : 'N/A'}
+                    `);
+                    
+                    circle.on('click', () => showMunicipioDetails(m.nome));
+                    
+                    markers.push(circle);
+                    
+                    // Draw connections
+                    if (m.mae) {
+                        const mae = municipiosData.find(city => city.nome === m.mae);
+                        if (mae && mae.lat && mae.lng) {
+                            L.polyline([[mae.lat, mae.lng], [m.lat, m.lng]], {
+                                color: '#d4af37',
+                                weight: 2,
+                                opacity: 0.5,
+                                dashArray: '5, 10'
+                            }).addTo(map);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize Municipalities
+        function initMunicipios() {
+            const grid = document.getElementById('municipiosGrid');
+            if (grid.innerHTML.trim() !== '') return; // Already initialized
+            
+            // Sort by name
+            const sorted = [...municipiosData].sort((a, b) => a.nome.localeCompare(b.nome));
+            
+            sorted.forEach(m => {
+                const card = document.createElement('div');
+                card.className = 'municipality-card';
+                card.onclick = () => showMunicipioDetails(m.nome);
+                card.innerHTML = `
+                    <h3>${m.nome}</h3>
+                    <div class="info">📅 Fundação: ${m.fundacao}</div>
+                    <div class="info">📍 Região: ${m.regiao}</div>
+                    <div class="info">🌳 Tronco: ${m.tronco}</div>
+                    ${m.mae ? `<div class="info">👤 Cidade-mãe: ${m.mae}</div>` : ''}
+                    <div class="info">👥 População: ${m.populacao ? m.populacao.toLocaleString() : 'N/A'}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Initialize Timeline
+        function initTimeline() {
+            const container = document.getElementById('timelineContainer');
+            if (container.innerHTML.trim() !== '') return; // Already initialized
+            
+            timelineData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'timeline-item';
+                div.innerHTML = `
+                    <div class="timeline-date">${item.ano}</div>
+                    <div class="timeline-content">
+                        <h3>${item.evento}</h3>
+                        <p>${item.descricao}</p>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Initialize Culture
+        function initCultura() {
+            const grid = document.getElementById('cultureGrid');
+            if (grid.innerHTML.trim() !== '') return; // Already initialized
+            
+            cultureData.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'culture-card';
+                card.innerHTML = `
+                    <div class="culture-card-header">
+                        <h2>${c.icone} ${c.titulo}</h2>
+                        <p style="font-size: 18px; margin-top: 5px;">${c.subtitulo}</p>
+                    </div>
+                    <div class="culture-card-body">
+                        <p>${c.descricao}</p>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Show Municipality Details
+        function showMunicipioDetails(nome) {
+            const m = municipiosData.find(city => city.nome === nome);
+            if (!m) return;
+            
+            const filhos = municipiosData.filter(city => city.mae === nome);
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <h2 style="color: #d4af37; margin-bottom: 20px;">${m.nome}</h2>
+                <p style="margin-bottom: 15px;"><strong>Fundação:</strong> ${m.fundacao}</p>
+                <p style="margin-bottom: 15px;"><strong>Região:</strong> ${m.regiao}</p>
+                <p style="margin-bottom: 15px;"><strong>Tronco Histórico:</strong> ${m.tronco}</p>
+                ${m.mae ? `<p style="margin-bottom: 15px;"><strong>Cidade-mãe:</strong> ${m.mae}</p>` : ''}
+                <p style="margin-bottom: 15px;"><strong>População:</strong> ${m.populacao ? m.populacao.toLocaleString() : 'N/A'} habitantes</p>
+                <p style="margin-bottom: 20px;"><strong>Descrição:</strong> ${m.descricao}</p>
+                ${m.lat && m.lng ? `<p style="margin-bottom: 15px;"><strong>Coordenadas:</strong> ${m.lat}, ${m.lng}</p>` : ''}
+                ${filhos.length > 0 ? `
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #d4af37;">
+                        <h3 style="color: #d4af37; margin-bottom: 10px;">Cidades-filhas (${filhos.length}):</h3>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            ${filhos.map(f => `<span style="background: #3d3d3d; padding: 5px 10px; border-radius: 5px; border: 1px solid #d4af37;">${f.nome}</span>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('modal').classList.add('active');
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            if (searchTerm.length < 2) return;
+            
+            const results = municipiosData.filter(m => 
+                m.nome.toLowerCase().includes(searchTerm) ||
+                m.regiao.toLowerCase().includes(searchTerm) ||
+                m.tronco.toLowerCase().includes(searchTerm)
+            );
+            
+            if (results.length > 0) {
+                showMunicipioDetails(results[0].nome);
+            }
+        });
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Animate stats on load
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            const range = end - start;
+            const minTimer = 50;
+            let stepTime = Math.abs(Math.floor(duration / range));
+            stepTime = Math.max(stepTime, minTimer);
+            let startTime = new Date().getTime();
+            let endTime = startTime + duration;
+            let timer;
+            
+            function run() {
+                let now = new Date().getTime();
+                let remaining = Math.max((endTime - now) / duration, 0);
+                let value = Math.round(end - (remaining * range));
+                obj.innerHTML = value;
+                if (value == end) {
+                    clearInterval(timer);
+                }
+            }
+            
+            timer = setInterval(run, stepTime);
+            run();
+        }
+
+        // Animate on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                animateValue("statMunicipios", 0, 417, 2000);
+                animateValue("statAnos", 0, 492, 2000);
+                animateValue("statTroncos", 0, 22, 2000);
+            }, 500);
+        });
+    </script>
+</body>
+</html>
